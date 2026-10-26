@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apresentação: Monitoramento & Observabilidade FortiGate 80F</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --bg-glass: rgba(255, 255, 255, 0.04);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(59, 130, 246, 0.3);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --glow-blue: rgba(59, 130, 246, 0.25);
+      --glow-green: rgba(16, 185, 129, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Background glow effect */
+    .ambient-glow {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      height: 70vh;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Top Progress Bar */
+    .progress-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 50;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 10px var(--accent-blue);
+    }
+
+    /* Header Bar */
+    header {
+      position: fixed;
+      top: 10px;
+      left: 0;
+      right: 0;
+      padding: 12px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.05));
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: var(--bg-glass);
+      border: 1px solid var(--border-card);
+      padding: 6px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+    }
+
+    /* Slides Deck Container */
+    .deck-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 80px 60px 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.96) translateY(20px);
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translateY(0);
+    }
+
+    .slide.previous {
+      opacity: 0;
+      transform: scale(0.96) translateY(-20px);
+    }
+
+    .slide-content {
+      width: 100%;
+      max-width: 1180px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Typography & Badges */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      width: fit-content;
+    }
+
+    .tag-blue {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+
+    .tag-green {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .tag-amber {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .tag-purple {
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: #a78bfa;
+    }
+
+    h1 {
+      font-size: 3.2rem;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 850px;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-highlight {
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: linear-gradient(145deg, rgba(16, 185, 129, 0.08), rgba(17, 24, 39, 0.85));
+    }
+
+    .card-accent-blue {
+      border-top: 4px solid var(--accent-blue);
+    }
+    .card-accent-green {
+      border-top: 4px solid var(--accent-green);
+    }
+    .card-accent-amber {
+      border-top: 4px solid var(--accent-amber);
+    }
+    .card-accent-purple {
+      border-top: 4px solid var(--accent-purple);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Metric & Highlight Boxes */
+    .stat-number {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+      margin: 12px 0 6px;
+    }
+
+    .stat-number.green {
+      color: var(--accent-green);
+      text-shadow: 0 0 20px var(--glow-green);
+    }
+
+    .stat-number.blue {
+      color: var(--accent-cyan);
+      text-shadow: 0 0 20px var(--glow-blue);
+    }
+
+    /* Timeline Roadmap */
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      position: relative;
+    }
+
+    .timeline-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .step-badge {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      line-height: 30px;
+      text-align: center;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    .step-now {
+      border-color: var(--accent-cyan);
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(17, 24, 39, 0.8));
+    }
+
+    .step-now .step-badge {
+      background: var(--accent-cyan);
+      color: #000;
+      border-color: var(--accent-cyan);
+    }
+
+    .step-future {
+      border-color: rgba(139, 92, 246, 0.25);
+    }
+
+    .step-future .step-badge {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: var(--accent-purple);
+      color: #c4b5fd;
+    }
+
+    /* Lists */
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.95rem;
+      color: #d1d5db;
+      line-height: 1.45;
+    }
+
+    .feature-list li span.bullet {
+      color: var(--accent-cyan);
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    /* Navigation Footer Controls */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      background: linear-gradient(to top, rgba(10, 14, 23, 0.9), transparent);
+    }
+
+    .nav-hints {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: #e2e8f0;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2563eb;
+      box-shadow: 0 0 16px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Print styling for PDF export */
+    @media print {
+      body {
+        overflow: visible;
+        height: auto;
+        background: #0a0e17 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .progress-container, header, footer, .ambient-glow {
+        display: none !important;
+      }
+      .deck-container {
+        position: static;
+        overflow: visible;
+      }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        page-break-after: always;
+        height: 100vh;
+        padding: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-badge">FORTIGATE 80F</span>
+      <span>Boulevard Shopping Feira de Santana • Gestão de TI</span>
+    </div>
+    <div class="slide-counter" id="slideCounter">Slide 1 de 8</div>
+  </header>
+
+  <!-- Deck Container -->
+  <main class="deck-container">
+
+    <!-- SLIDE 1: Capa -->
+    <section class="slide active" data-index="1">
+      <div class="slide-content" style="text-align: center; align-items: center;">
+        <span class="tag tag-blue">Proposta de Projeto de Observabilidade</span>
+        <h1 style="font-size: 3.6rem;">Monitoramento Estratégico do FortiGate</h1>
+        <p class="subtitle" style="text-align: center;">
+          Visibilidade contínua de links de internet, segurança perimetral e saúde de hardware — com <strong>custo zero em novas licenças</strong> e integração com alertas em tempo real.
+        </p>
+
+        <div class="grid-3" style="width: 100%; max-width: 900px; margin-top: 15px;">
+          <div class="card">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Dispositivo Ativo</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-top: 6px;">FortiGate 80F</div>
+            <div style="font-size: 0.8rem; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; margin-top: 4px;">FGT80FTK22021058</div>
+          </div>
+          <div class="card">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Versão de Firmware</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-top: 6px;">FortiOS v7.6.7</div>
+            <div style="font-size: 0.8rem; color: var(--accent-green); margin-top: 4px;">Build 3704 (Mature)</div>
+          </div>
+          <div class="card">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Investimento em Licença</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green); margin-top: 6px;">R$ 0,00 Adicional</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Uso de APIs Nativas</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: O Cenário & A Necessidade -->
+    <section class="slide" data-index="2">
+      <div class="slide-content">
+        <span class="tag tag-amber">Diagnóstico & Contexto</span>
+        <h2>Por que precisamos desse monitoramento?</h2>
+        <p class="subtitle">
+          O firewall é o coração da conectividade do shopping. Falhas silenciosas nos links ou saturação de hardware afetam a operação dos lojistas e da administração.
+        </p>
+
+        <div class="grid-2">
+          <div class="card card-accent-amber">
+            <div class="card-title">
+              <span>⚠️</span> Característica Crítica do FortiGate 80F
+            </div>
+            <p class="card-desc">
+              O modelo <strong>80F</strong> (ao contrário do modelo 81F) <strong>não possui disco de armazenamento SSD interno</strong>.
+            </p>
+            <ul class="feature-list" style="margin-top: 14px;">
+              <li><span class="bullet">▸</span> Os logs locais são voláteis e limitados à memória RAM temporária.</li>
+              <li><span class="bullet">▸</span> Sem um coletor externo, perdemos histórico de incidentes e métricas de desempenho.</li>
+              <li><span class="bullet">▸</span> A criação de um coletor automatizado resolve essa limitação estrutural.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-blue">
+            <div class="card-title">
+              <span>🎯</span> O Que Resolvemos na Prática
+            </div>
+            <ul class="feature-list" style="margin-top: 6px;">
+              <li><span class="bullet">✔</span> <strong>Proatividade:</strong> Saber da queda de um link de internet antes que qualquer loja ou setor abra chamado.</li>
+              <li><span class="bullet">✔</span> <strong>Auditoria de Operadoras:</strong> Monitorar perda de pacotes e jitter (latência) para cobrança e abatimento em faturas de telecom.</li>
+              <li><span class="bullet">✔</span> <strong>Saúde do Firewall:</strong> Prevenir travamentos por alta de CPU, vazamento de memória ou picos de sessões.</li>
+              <li><span class="bullet">✔</span> <strong>Visibilidade de VPN:</strong> Saber o status dos túneis das lojas e acessos remotos.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Licenciamento (Impacto Zero no Orçamento) -->
+    <section class="slide" data-index="3">
+      <div class="slide-content">
+        <span class="tag tag-green">Orçamento & Viabilidade</span>
+        <h2>Licenciamento: Aproveitamento Total do Contrato Atual</h2>
+        <p class="subtitle">
+          Nenhuma aquisição de software ou licença da Fortinet será necessária. Vamos extrair o potencial máximo do pacote já contratado pelo condomínio.
+        </p>
+
+        <div class="grid-3">
+          <div class="card card-highlight">
+            <div style="font-size: 0.85rem; color: var(--accent-green); font-weight: 700; text-transform: uppercase;">Custo Extra</div>
+            <div class="stat-number green">R$ 0</div>
+            <p class="card-desc">
+              A <strong>REST API oficial</strong>, <strong>SNMP</strong> e <strong>Syslog</strong> são recursos nativos e sem custo do próprio FortiOS.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>🛡️</span> Licenças Atuais Ativas
+            </div>
+            <ul class="feature-list">
+              <li><span class="bullet">✓</span> FortiCare Support (Garantia/Suporte)</li>
+              <li><span class="bullet">✓</span> Firmware & General Updates</li>
+              <li><span class="bullet">✓</span> IPS (Intrusion Prevention)</li>
+              <li><span class="bullet">✓</span> AntiVirus Engine</li>
+              <li><span class="bullet">✓</span> Web Filtering</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>💡</span> O que isso nos possibilita?
+            </div>
+            <p class="card-desc">
+              Além de monitorar links e hardware, conseguimos <strong>coletar indicadores de cibersegurança</strong>: quantidade de malwares bloqueados, ataques de rede mitigados e sites indevidos filtrados.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Arquitetura e Decisão Técnica -->
+    <section class="slide" data-index="4">
+      <div class="slide-content">
+        <span class="tag tag-blue">Decisões Técnicas</span>
+        <h2>Tecnologias Selecionadas & Por Que Elas Foram Escolhidas</h2>
+        <p class="subtitle">
+          Abordagem moderna baseada em boas práticas de NetDevOps (código limpo, seguro e com fácil manutenção).
+        </p>
+
+        <div class="grid-3">
+          <div class="card card-accent-blue">
+            <div class="card-title">
+              <span>🐍</span> Linguagem: Python 3.11+
+            </div>
+            <p class="card-desc">
+              Linguagem de referência mundial em automação de redes. 
+            </p>
+            <ul class="feature-list" style="margin-top: 10px;">
+              <li><span class="bullet">▸</span> Conexões velozes via biblioteca assíncrona HTTP.</li>
+              <li><span class="bullet">▸</span> Fácil integração com canais de alerta (Teams, Telegram, E-mail).</li>
+              <li><span class="bullet">▸</span> Qualquer profissional de TI consegue dar manutenção futura.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-cyan">
+            <div class="card-title">
+              <span>⚡</span> Protocolo: FortiOS REST API
+            </div>
+            <p class="card-desc">
+              Substitui métodos arcaicos (como raspagem de tela CLI).
+            </p>
+            <ul class="feature-list" style="margin-top: 10px;">
+              <li><span class="bullet">▸</span> Retorno estruturado em JSON oficial.</li>
+              <li><span class="bullet">▸</span> Acesso seguro via Token Bearer restrito.</li>
+              <li><span class="bullet">▸</span> Perfil 100% somente-leitura (Read-Only), sem risco à configuração do firewall.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-purple">
+            <div class="card-title">
+              <span>🔔</span> Alertas & Visualização
+            </div>
+            <p class="card-desc">
+              Foco em utilidade real para a equipe técnica.
+            </p>
+            <ul class="feature-list" style="margin-top: 10px;">
+              <li><span class="bullet">▸</span> Notificação imediata em canal de TI (ex: Microsoft Teams ou Telegram).</li>
+              <li><span class="bullet">▸</span> Painel NOC com status das portas, operadoras e consumo de banda.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: As 4 Frentes de Monitoramento -->
+    <section class="slide" data-index="5">
+      <div class="slide-content">
+        <span class="tag tag-purple">Métricas Coletadas</span>
+        <h2>O que o supervisor e a gerência passarão a enxergar</h2>
+        <p class="subtitle">
+          Painel dividido em 4 pilares essenciais para controle da infraestrutura do shopping.
+        </p>
+
+        <div class="grid-4">
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-cyan);">
+              <span>🌐</span> Links & SD-WAN
+            </div>
+            <ul class="feature-list">
+              <li><span class="bullet">•</span> Status UP/DOWN das WANs</li>
+              <li><span class="bullet">•</span> Latência das operadoras (ms)</li>
+              <li><span class="bullet">•</span> Jitter e Perda de Pacotes</li>
+              <li><span class="bullet">•</span> Histórico de failovers</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-green);">
+              <span>⚙️</span> Saúde do FortiGate
+            </div>
+            <ul class="feature-list">
+              <li><span class="bullet">•</span> % de Uso da CPU (SOC4)</li>
+              <li><span class="bullet">•</span> Memória RAM consumida</li>
+              <li><span class="bullet">•</span> Quantidade de sessões ativas</li>
+              <li><span class="bullet">•</span> Tempo de atividade (Uptime)</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-amber);">
+              <span>🔒</span> VPNs & Conectividade
+            </div>
+            <ul class="feature-list">
+              <li><span class="bullet">•</span> Status dos túneis IPsec</li>
+              <li><span class="bullet">•</span> Usuários SSL-VPN conectados</li>
+              <li><span class="bullet">•</span> Duração das sessões remotas</li>
+              <li><span class="bullet">•</span> Tráfego trafegado nos túneis</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-red);">
+              <span>🛡️</span> Cibersegurança
+            </div>
+            <ul class="feature-list">
+              <li><span class="bullet">•</span> Bloqueios efetuados por IPS</li>
+              <li><span class="bullet">•</span> Vírus barrados pelo antivírus</li>
+              <li><span class="bullet">•</span> Categorias de sites bloqueadas</li>
+              <li><span class="bullet">•</span> Top IPs bloqueados por dia</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Cronograma - Passos de Agora (Curto Prazo) -->
+    <section class="slide" data-index="6">
+      <div class="slide-content">
+        <span class="tag tag-cyan">Plano de Ação Imediato</span>
+        <h2>Passos de Agora (Fase 1: Fundação & Segurança)</h2>
+        <p class="subtitle">
+          Atividades práticas para os próximos dias, sem qualquer interrupção de rede ou risco à operação.
+        </p>
+
+        <div class="timeline">
+          <div class="timeline-step step-now">
+            <div class="step-badge">1</div>
+            <div style="font-weight: 700; color: #fff;">Configuração no FortiGate</div>
+            <p class="card-desc">
+              Criar perfil de administrador de API restrito a <strong>Read-Only</strong> e gerar Token autenticado com restrição de IP de origem.
+            </p>
+          </div>
+
+          <div class="timeline-step step-now">
+            <div class="step-badge">2</div>
+            <div style="font-weight: 700; color: #fff;">Base do Projeto em Python</div>
+            <p class="card-desc">
+              Estruturar as pastas do repositório, variáveis de ambiente seguras (`.env`) e cliente de comunicação HTTP.
+            </p>
+          </div>
+
+          <div class="timeline-step step-now">
+            <div class="step-badge">3</div>
+            <div style="font-weight: 700; color: #fff;">Coletores de Hardware & Links</div>
+            <p class="card-desc">
+              Programar scripts de coleta a cada 30 segundos: consumo de CPU/RAM e status UP/DOWN das portas de internet.
+            </p>
+          </div>
+
+          <div class="timeline-step step-now">
+            <div class="step-badge">4</div>
+            <div style="font-weight: 700; color: #fff;">Alarme Crítico de Queda</div>
+            <p class="card-desc">
+              Primeiro gatilho de notificação: envio de alerta automático no Teams/Telegram caso uma das operadoras caia.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Cronograma - Passos Futuros (Médio/Longo Prazo) -->
+    <section class="slide" data-index="7">
+      <div class="slide-content">
+        <span class="tag tag-purple">Evolução do Projeto</span>
+        <h2>Passos Futuros (Fase 2: Observabilidade & Gestão)</h2>
+        <p class="subtitle">
+          Melhorias planejadas para consolidação da governança e inteligência de dados da TI.
+        </p>
+
+        <div class="timeline">
+          <div class="timeline-step step-future">
+            <div class="step-badge">5</div>
+            <div style="font-weight: 700; color: #fff;">Monitoramento Fino SD-WAN</div>
+            <p class="card-desc">
+              Coleta histórica de latência e packet loss para auditoria contratual contra operadoras de internet.
+            </p>
+          </div>
+
+          <div class="timeline-step step-future">
+            <div class="step-badge">6</div>
+            <div style="font-weight: 700; color: #fff;">Dashboard NOC Central</div>
+            <p class="card-desc">
+              Painel de visualização em tempo real (em tela de TV na sala de TI) com mapa de status e gráficos dinâmicos.
+            </p>
+          </div>
+
+          <div class="timeline-step step-future">
+            <div class="step-badge">7</div>
+            <div style="font-weight: 700; color: #fff;">Métricas de Segurança (SOC)</div>
+            <p class="card-desc">
+              Consolidação de relatórios mensais dos ataques bloqueados por IPS e filtros web para prestação de contas à diretoria.
+            </p>
+          </div>
+
+          <div class="timeline-step step-future">
+            <div class="step-badge">8</div>
+            <div style="font-weight: 700; color: #fff;">Relatórios Automatizados</div>
+            <p class="card-desc">
+              Envio semanal automático de relatório executivo de disponibilidade e consumo de banda para a supervisão.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Conclusão & Alinhamento -->
+    <section class="slide" data-index="8">
+      <div class="slide-content" style="text-align: center; align-items: center;">
+        <span class="tag tag-green">Ganhos para o Shopping</span>
+        <h2>Resumo dos Benefícios para a Operação</h2>
+        <p class="subtitle" style="text-align: center;">
+          Uma iniciativa prática que eleva o nível de maturidade da infraestrutura de TI do Boulevard Shopping.
+        </p>
+
+        <div class="grid-3" style="width: 100%; max-width: 1020px; text-align: left; margin-top: 10px;">
+          <div class="card card-highlight">
+            <div class="card-title">💰 Eficiência de Custos</div>
+            <p class="card-desc">
+              Aproveita recursos já pagos e elimina a necessidade de contratação de ferramentas externas ou licenças de nuvem caras.
+            </p>
+          </div>
+
+          <div class="card card-highlight">
+            <div class="card-title">⚡ Redução de Tempo de Resposta</div>
+            <p class="card-desc">
+              Detecção de instabilidades em menos de 1 minuto, permitindo atuar antes que a operação do shopping seja impactada.
+            </p>
+          </div>
+
+          <div class="card card-highlight">
+            <div class="card-title">📊 Apoio à Decisão e Gestão</div>
+            <p class="card-desc">
+              Dados concretos para reuniões com provedores de telecom e planejamento de capacidade dos links da administração e lojistas.
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button class="btn btn-primary" onclick="alert('Plano pronto para execução da Fase 1!')" style="font-size: 1rem; padding: 12px 28px;">
+            Aprovação & Início da Fase 1
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer Controls -->
+  <footer>
+    <div class="nav-hints">
+      <span>Navegação:</span>
+      <span class="kbd">←</span>
+      <span class="kbd">→</span>
+      <span>ou</span>
+      <span class="kbd">Espaço</span>
+      <span style="margin-left: 10px;">|</span>
+      <span class="kbd">F</span><span>Tela Cheia</span>
+      <span class="kbd">Ctrl+P</span><span>Imprimir / PDF</span>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn" id="prevBtn" onclick="changeSlide(-1)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Anterior
+      </button>
+      <button class="btn btn-primary" id="nextBtn" onclick="changeSlide(1)">
+        Próximo
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button class="btn" onclick="toggleFullScreen()" title="Alternar Tela Cheia">
+        ⛶
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const progressBar = document.getElementById('progressBar');
+    const slideCounter = document.getElementById('slideCounter');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function updateSlide() {
+      slides.forEach((slide, idx) => {
+        slide.classList.remove('active', 'previous');
+        if (idx === currentSlide) {
+          slide.classList.add('active');
+        } else if (idx < currentSlide) {
+          slide.classList.add('previous');
+        }
+      });
+
+      // Update counter and progress bar
+      slideCounter.textContent = `Slide ${currentSlide + 1} de ${totalSlides}`;
+      const progressPercent = ((currentSlide + 1) / totalSlides) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+
+      // Update button states
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+      nextBtn.textContent = currentSlide === totalSlides - 1 ? 'Concluir' : 'Próximo';
+    }
+
+    function changeSlide(direction) {
+      const nextIndex = currentSlide + direction;
+      if (nextIndex >= 0 && nextIndex < totalSlides) {
+        currentSlide = nextIndex;
+        updateSlide();
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        changeSlide(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === 'PageUp') {
+        changeSlide(-1);
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullScreen();
+      }
+    });
+
+    // Initialize
+    updateSlide();
+  </script>
+</body>
+</html>
